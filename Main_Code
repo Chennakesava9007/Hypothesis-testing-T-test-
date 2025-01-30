@@ -1,0 +1,71 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from scipy.stats import ttest_ind
+
+# Add new football dataset
+football_data_url = "https://www.football-data.co.uk/mmz4281/2223/E0.csv"
+football_data = pd.read_csv(football_data_url)
+football_data.to_csv("FootballDataset.csv", index=False)
+print("Football dataset added and saved as 'FootballDataset.csv'.")
+
+# Read the football dataset
+football_data = pd.read_csv("FootballDataset.csv")
+football_data = football_data[['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR']]
+football_data = football_data.dropna()
+
+# Encode categorical columns
+label_encoder = preprocessing.LabelEncoder()
+football_data['HomeTeam'] = label_encoder.fit_transform(football_data['HomeTeam'])
+football_data['AwayTeam'] = label_encoder.fit_transform(football_data['AwayTeam'])
+football_data['FTR'] = label_encoder.fit_transform(football_data['FTR'])
+
+# Define features and target
+X = football_data[['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']]
+y = football_data['FTR']
+
+# Split football data
+Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, train_size=0.70, random_state=101)
+
+# Logistic Regression
+logit = LogisticRegression()
+logit.fit(Xtrain, ytrain)
+pred1 = logit.predict(Xtest)
+
+# Naive Bayes
+nb = GaussianNB()
+nb.fit(Xtrain, ytrain)
+pred2 = nb.predict(Xtest)
+
+# Compare models
+model1 = np.array(pred1)
+model2 = np.array(pred2)
+df1 = pd.DataFrame(model1)
+df2 = pd.DataFrame(model2)
+pd.concat([df1, df2], axis=1).to_csv('Performance11.csv', header=['Model1', 'Model2'])
+
+# T-test
+perform_data = pd.read_csv("Performance11.csv")
+model1 = perform_data[["Model1"]]
+model2 = perform_data[["Model2"]]
+t_statistic, p_value = ttest_ind(model1, model2)
+
+# Print results
+print(f'T-statistic: {t_statistic}')
+print(f'P-value: {p_value}')
+alpha = 0.05
+if p_value < alpha:
+    print("Reject the null hypothesis.")
+    print("There is a significant difference in the accuracy of Model A and Model B.")
+    if t_statistic > 0:
+        print("Model 1 is better than Model 2")
+    else:
+        print("Model 2 is better than Model 1")
+else:
+    print("Fail to reject the null hypothesis.")
+    print("There is no significant difference in the accuracy of Model A and Model B.")
